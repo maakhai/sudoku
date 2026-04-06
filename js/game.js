@@ -734,5 +734,5 @@ class SudokuGame {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  new SudokuGame();
+  window.game = new SudokuGame();
 });
