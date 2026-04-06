@@ -666,9 +666,6 @@ class SudokuGame {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
-    }) + ' ' + now.toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit'
     });
 
     const entry = { time: seconds, date: dateStr };
@@ -676,7 +673,11 @@ class SudokuGame {
     times[difficulty].sort((a, b) => a.time - b.time);
     times[difficulty] = times[difficulty].slice(0, 5);
 
-    localStorage.setItem('sudoku-best-times', JSON.stringify(times));
+    try {
+      localStorage.setItem('sudoku-best-times', JSON.stringify(times));
+    } catch (e) {
+      console.error('Failed to save best times to localStorage:', e);
+    }
 
     return times[difficulty][0].time === seconds;
   }
@@ -691,6 +692,8 @@ class SudokuGame {
   }
 
   renderBestTimes(difficulty, currentSeconds) {
+    if (!this.bestTimesEl) return;
+
     const times = this.getBestTimes();
     const list = times[difficulty] || [];
 
