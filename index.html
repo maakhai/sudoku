@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sudoku</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Sudoku</h1>
+      <div class="controls">
+        <div class="difficulty-selector">
+          <label for="difficulty">Dificuldade:</label>
+          <select id="difficulty">
+            <option value="easy">Fácil</option>
+            <option value="medium" selected>Médio</option>
+            <option value="hard">Difícil</option>
+            <option value="professional">Profissional</option>
+            <option value="master">Mestre</option>
+          </select>
+          <button id="new-game-btn">Novo Jogo</button>
+        </div>
+        <div class="game-info">
+          <div class="errors" id="errors">
+            <span class="error-dot"></span>
+            <span class="error-dot"></span>
+            <span class="error-dot"></span>
+          </div>
+          <div class="timer-container">
+            <div class="timer" id="timer">00:00</div>
+            <button id="pause-btn" class="pause-btn" title="Pausar">&#9642;&#9642;</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="board-container">
+        <div class="board" id="board"></div>
+        <div class="board-overlay" id="board-overlay">
+          <span>Jogo Pausado</span>
+        </div>
+      </div>
+
+      <div class="sidebar">
+        <div class="mode-toggle" id="mode-toggle">
+          <button class="mode-btn active" data-mode="normal">Normal</button>
+          <button class="mode-btn" data-mode="candidate">Candidato</button>
+        </div>
+
+        <div class="numpad" id="numpad">
+          <button class="num-btn" data-num="1"><span class="num-main">1</span></button>
+          <button class="num-btn" data-num="2"><span class="num-main">2</span></button>
+          <button class="num-btn" data-num="3"><span class="num-main">3</span></button>
+          <button class="num-btn" data-num="4"><span class="num-main">4</span></button>
+          <button class="num-btn" data-num="5"><span class="num-main">5</span></button>
+          <button class="num-btn" data-num="6"><span class="num-main">6</span></button>
+          <button class="num-btn" data-num="7"><span class="num-main">7</span></button>
+          <button class="num-btn" data-num="8"><span class="num-main">8</span></button>
+          <button class="num-btn" data-num="9"><span class="num-main">9</span></button>
+        </div>
+
+        <div class="actions">
+          <button id="clear-cell-btn" title="Delete/Backspace">Limpar</button>
+          <button id="undo-btn" title="Ctrl+Z">Desfazer</button>
+        </div>
+
+        <div class="keyboard-hints">
+          <p><kbd>↑↓←→</kbd> Navegar</p>
+          <p><kbd>Espaço</kbd> Alternar modo</p>
+          <p><kbd>1-9</kbd> Inserir número</p>
+          <p><kbd>Del</kbd> Limpar célula</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-overlay" id="game-over-modal" style="display: none;">
+    <div class="modal">
+      <h2>Game Over</h2>
+      <p>Você atingiu o limite de 3 erros!</p>
+      <div class="modal-actions">
+        <button id="restart-same-btn">Recomeçar</button>
+        <button id="new-game-modal-btn">Novo Jogo</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="win-modal" style="display: none;">
+    <div class="modal">
+      <h2>Parabéns!</h2>
+      <p>Você completou o Sudoku!</p>
+      <p id="win-time"></p>
+      <div class="modal-actions">
+        <button id="new-game-win-btn">Novo Jogo</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/game.js"></script>
+</body>
+</html>
