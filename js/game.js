@@ -39,6 +39,8 @@ class SudokuGame {
     this.gameOverModal = document.getElementById('game-over-modal');
     this.winModal = document.getElementById('win-modal');
     this.winTimeEl = document.getElementById('win-time');
+    this.newRecordMsgEl = document.getElementById('new-record-msg');
+    this.bestTimesEl = document.getElementById('best-times');
 
     this.bindEvents();
     this.updateModeIndicator();
@@ -633,9 +635,89 @@ class SudokuGame {
     const secs = this.seconds % 60;
     this.winTimeEl.textContent = `Tempo: ${mins}m ${secs}s`;
 
+    const difficulty = this.difficultySelect.value;
+    const isNewRecord = this.saveBestTime(difficulty, this.seconds);
+
+    if (isNewRecord) {
+      this.newRecordMsgEl.style.display = 'block';
+    } else {
+      this.newRecordMsgEl.style.display = 'none';
+    }
+
+    this.renderBestTimes(difficulty, this.seconds);
+
     setTimeout(() => {
       this.winModal.style.display = 'flex';
     }, 300);
+  }
+
+  getBestTimes() {
+    try {
+      const data = localStorage.getItem('sudoku-best-times');
+      if (data) return JSON.parse(data);
+    } catch (e) {}
+    return { easy: [], medium: [], hard: [], professional: [], master: [] };
+  }
+
+  saveBestTime(difficulty, seconds) {
+    const times = this.getBestTimes();
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }) + ' ' + now.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const entry = { time: seconds, date: dateStr };
+    times[difficulty].push(entry);
+    times[difficulty].sort((a, b) => a.time - b.time);
+    times[difficulty] = times[difficulty].slice(0, 5);
+
+    localStorage.setItem('sudoku-best-times', JSON.stringify(times));
+
+    return times[difficulty][0].time === seconds;
+  }
+
+  formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins > 0) {
+      return `${mins}m ${secs}s`;
+    }
+    return `${secs}s`;
+  }
+
+  renderBestTimes(difficulty, currentSeconds) {
+    const times = this.getBestTimes();
+    const list = times[difficulty] || [];
+
+    const difficultyNames = {
+      easy: 'Fácil',
+      medium: 'Médio',
+      hard: 'Difícil',
+      professional: 'Profissional',
+      master: 'Mestre'
+    };
+
+    if (list.length === 0) {
+      this.bestTimesEl.innerHTML = `<h3>Melhores tempos - ${difficultyNames[difficulty]}</h3><p style="color:var(--text-muted);font-size:0.85rem;">Nenhum tempo registrado ainda.</p>`;
+      return;
+    }
+
+    let html = `<h3>Melhores tempos - ${difficultyNames[difficulty]}</h3><ol>`;
+    list.forEach((entry, i) => {
+      const isCurrent = entry.time === currentSeconds;
+      html += `<li class="${isCurrent ? 'is-current' : ''}">
+        <span class="time-value">${this.formatTime(entry.time)}</span>
+        <span class="time-date">${entry.date}</span>
+      </li>`;
+    });
+    html += '</ol>';
+
+    this.bestTimesEl.innerHTML = html;
   }
 
   handleGameOver() {

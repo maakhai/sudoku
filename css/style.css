@@ -523,6 +523,73 @@ main {
   border-color: var(--accent);
 }
 
+.new-record-msg {
+  color: var(--accent);
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 10px 0;
+  animation: pulse 1s ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.best-times {
+  text-align: left;
+  margin: 15px 0;
+  padding: 15px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+}
+
+.best-times h3 {
+  color: var(--accent);
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+
+.best-times ol {
+  list-style: none;
+  counter-reset: best;
+  padding: 0;
+  margin: 0;
+}
+
+.best-times li {
+  counter-increment: best;
+  padding: 6px 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.best-times li::before {
+  content: counter(best) ".";
+  color: var(--accent);
+  margin-right: 10px;
+  font-weight: 600;
+  min-width: 20px;
+}
+
+.best-times li .time-value {
+  font-family: monospace;
+  font-size: 0.95rem;
+}
+
+.best-times li .time-date {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.best-times li.is-current {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 @media (max-width: 768px) {
   main {
     flex-direction: column;
