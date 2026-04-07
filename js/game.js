@@ -13,6 +13,7 @@ class SudokuGame {
     this.seconds = 0;
     this.gameOver = false;
     this.isPaused = false;
+    this.autoSaveInterval = null;
 
     this.difficultyConfig = {
       easy: 30,
@@ -41,22 +42,53 @@ class SudokuGame {
     this.winTimeEl = document.getElementById('win-time');
     this.newRecordMsgEl = document.getElementById('new-record-msg');
     this.bestTimesEl = document.getElementById('best-times');
+    this.resumeModal = document.getElementById('resume-modal');
+    this.resumeInfoEl = document.getElementById('resume-info');
 
+    this.loadDifficulty();
     this.bindEvents();
     this.updateModeIndicator();
-    this.newGame();
+
+    const savedGame = this.loadGameState();
+    if (savedGame && !savedGame.gameOver) {
+      this.showResumeModal(savedGame);
+    } else {
+      this.clearGameState();
+      this.newGame();
+    }
+
+    this.startAutoSave();
   }
 
   bindEvents() {
-    this.newGameBtn.addEventListener('click', () => this.newGame());
+    this.newGameBtn.addEventListener('click', () => {
+      this.clearGameState();
+      this.newGame();
+    });
 
     document.getElementById('restart-same-btn').addEventListener('click', () => this.restartSame());
     document.getElementById('new-game-modal-btn').addEventListener('click', () => {
       this.gameOverModal.style.display = 'none';
+      this.clearGameState();
       this.newGame();
     });
     document.getElementById('new-game-win-btn').addEventListener('click', () => {
       this.winModal.style.display = 'none';
+      this.clearGameState();
+      this.newGame();
+    });
+
+    document.getElementById('resume-btn').addEventListener('click', () => {
+      this.resumeModal.style.display = 'none';
+      const savedGame = this.loadGameState();
+      if (savedGame) {
+        this.restoreGameState(savedGame);
+      }
+    });
+
+    document.getElementById('new-game-resume-btn').addEventListener('click', () => {
+      this.resumeModal.style.display = 'none';
+      this.clearGameState();
       this.newGame();
     });
 
@@ -66,6 +98,7 @@ class SudokuGame {
     this.modeToggleEl.querySelectorAll('.mode-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         this.setMode(btn.dataset.mode);
+        this.saveGameState();
       });
     });
 
@@ -93,7 +126,11 @@ class SudokuGame {
       }
     });
 
-    this.difficultySelect.addEventListener('change', () => this.newGame());
+    this.difficultySelect.addEventListener('change', () => {
+      this.saveDifficulty();
+      this.clearGameState();
+      this.newGame();
+    });
 
     this.pauseBtnEl.addEventListener('click', () => this.togglePause());
 
@@ -101,6 +138,10 @@ class SudokuGame {
       if (document.hidden && !this.isPaused && !this.gameOver) {
         this.togglePause();
       }
+    });
+
+    window.addEventListener('beforeunload', () => {
+      this.saveGameState();
     });
   }
 
@@ -118,6 +159,7 @@ class SudokuGame {
     if (e.key === ' ') {
       e.preventDefault();
       this.toggleMode();
+      this.saveGameState();
       return;
     }
 
@@ -240,6 +282,8 @@ class SudokuGame {
     this.renderBoard();
     this.gameOverModal.style.display = 'none';
     this.winModal.style.display = 'none';
+
+    this.saveGameState();
   }
 
   restartSame() {
@@ -264,6 +308,8 @@ class SudokuGame {
     this.updateErrorDisplay();
     this.renderBoard();
     this.gameOverModal.style.display = 'none';
+
+    this.saveGameState();
   }
 
   generateSolution() {
@@ -487,6 +533,7 @@ class SudokuGame {
 
       this.renderBoard();
       this.selectCell(row, col);
+      this.saveGameState();
     } else {
       this.saveHistory(row, col, 'value');
 
@@ -501,6 +548,8 @@ class SudokuGame {
 
         if (this.checkWin()) {
           this.handleWin();
+        } else {
+          this.saveGameState();
         }
       } else {
         this.errors++;
@@ -518,6 +567,7 @@ class SudokuGame {
             this.board[row][col] = 0;
             this.renderBoard();
             this.selectCell(row, col);
+            this.saveGameState();
           }, 600);
         }
 
@@ -557,6 +607,7 @@ class SudokuGame {
       this.notes[row][col].clear();
       this.renderBoard();
       this.selectCell(row, col);
+      this.saveGameState();
     }
   }
 
@@ -583,6 +634,7 @@ class SudokuGame {
 
     this.renderBoard();
     this.selectCell(action.row, action.col);
+    this.saveGameState();
   }
 
   getCellElement(row, col) {
@@ -645,6 +697,8 @@ class SudokuGame {
     }
 
     this.renderBestTimes(difficulty, this.seconds);
+
+    this.clearGameState();
 
     setTimeout(() => {
       this.winModal.style.display = 'flex';
@@ -726,10 +780,112 @@ class SudokuGame {
   handleGameOver() {
     this.gameOver = true;
     this.stopTimer();
+    this.clearGameState();
 
     setTimeout(() => {
       this.gameOverModal.style.display = 'flex';
     }, 500);
+  }
+
+  saveGameState() {
+    try {
+      const state = {
+        board: this.board,
+        solution: this.solution,
+        initial: this.initial,
+        notes: this.notes.map(row => row.map(set => [...set])),
+        errors: this.errors,
+        seconds: this.seconds,
+        isNoteMode: this.isNoteMode,
+        difficulty: this.difficultySelect.value,
+        gameOver: this.gameOver
+      };
+      localStorage.setItem('sudoku-current-game', JSON.stringify(state));
+    } catch (e) {
+      console.error('Failed to save game state:', e);
+    }
+  }
+
+  loadGameState() {
+    try {
+      const data = localStorage.getItem('sudoku-current-game');
+      if (data) return JSON.parse(data);
+    } catch (e) {
+      console.error('Failed to load game state:', e);
+    }
+    return null;
+  }
+
+  restoreGameState(state) {
+    this.board = state.board;
+    this.solution = state.solution;
+    this.initial = state.initial;
+    this.notes = state.notes.map(row => row.map(arr => new Set(arr)));
+    this.errors = state.errors;
+    this.seconds = state.seconds;
+    this.isNoteMode = state.isNoteMode;
+    this.gameOver = state.gameOver;
+    this.history = [];
+    this.selectedCell = null;
+    this.isPaused = false;
+
+    this.difficultySelect.value = state.difficulty;
+    this.boardOverlayEl.classList.remove('visible');
+    this.pauseBtnEl.innerHTML = '&#9642;&#9642;';
+    this.pauseBtnEl.title = 'Pausar';
+
+    this.stopTimer();
+    this.updateTimerDisplay();
+    this.startTimer();
+
+    this.updateErrorDisplay();
+    this.updateModeIndicator();
+    this.renderBoard();
+  }
+
+  clearGameState() {
+    try {
+      localStorage.removeItem('sudoku-current-game');
+    } catch (e) {}
+  }
+
+  showResumeModal(state) {
+    const difficultyNames = {
+      easy: 'Fácil',
+      medium: 'Médio',
+      hard: 'Difícil',
+      professional: 'Profissional',
+      master: 'Mestre'
+    };
+    const diffName = difficultyNames[state.difficulty] || state.difficulty;
+    const mins = Math.floor(state.seconds / 60);
+    const secs = state.seconds % 60;
+    const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+    this.resumeInfoEl.textContent = `Dificuldade: ${diffName} | Tempo: ${timeStr} | Erros: ${state.errors}/3`;
+    this.resumeModal.style.display = 'flex';
+  }
+
+  saveDifficulty() {
+    try {
+      localStorage.setItem('sudoku-difficulty', this.difficultySelect.value);
+    } catch (e) {}
+  }
+
+  loadDifficulty() {
+    try {
+      const saved = localStorage.getItem('sudoku-difficulty');
+      if (saved && this.difficultyConfig[saved]) {
+        this.difficultySelect.value = saved;
+      }
+    } catch (e) {}
+  }
+
+  startAutoSave() {
+    this.autoSaveInterval = setInterval(() => {
+      if (!this.gameOver && !this.isPaused) {
+        this.saveGameState();
+      }
+    }, 5000);
   }
 }
 
