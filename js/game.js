@@ -14,6 +14,7 @@ class SudokuGame {
     this.gameOver = false;
     this.isPaused = false;
     this.autoSaveInterval = null;
+    this.timerStarted = false;
 
     this.difficultyConfig = {
       easy: 30,
@@ -50,7 +51,7 @@ class SudokuGame {
     this.updateModeIndicator();
 
     const savedGame = this.loadGameState();
-    if (savedGame && !savedGame.gameOver) {
+    if (savedGame && !savedGame.gameOver && savedGame.seconds > 0) {
       this.showResumeModal(savedGame);
     } else {
       this.clearGameState();
@@ -275,8 +276,8 @@ class SudokuGame {
 
     this.stopTimer();
     this.seconds = 0;
+    this.timerStarted = false;
     this.updateTimerDisplay();
-    this.startTimer();
 
     this.updateErrorDisplay();
     this.renderBoard();
@@ -302,6 +303,7 @@ class SudokuGame {
 
     this.stopTimer();
     this.seconds = 0;
+    this.timerStarted = false;
     this.updateTimerDisplay();
     this.startTimer();
 
@@ -514,6 +516,11 @@ class SudokuGame {
     const { row, col } = this.selectedCell;
     if (this.initial[row][col] !== 0) return;
 
+    if (!this.timerStarted) {
+      this.timerStarted = true;
+      this.startTimer();
+    }
+
     let count = 0;
     for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
@@ -682,6 +689,7 @@ class SudokuGame {
   handleWin() {
     this.gameOver = true;
     this.stopTimer();
+    this.timerStarted = false;
 
     const mins = Math.floor(this.seconds / 60);
     const secs = this.seconds % 60;
@@ -798,7 +806,8 @@ class SudokuGame {
         seconds: this.seconds,
         isNoteMode: this.isNoteMode,
         difficulty: this.difficultySelect.value,
-        gameOver: this.gameOver
+        gameOver: this.gameOver,
+        timerStarted: this.timerStarted
       };
       localStorage.setItem('sudoku-current-game', JSON.stringify(state));
     } catch (e) {
@@ -825,6 +834,7 @@ class SudokuGame {
     this.seconds = state.seconds;
     this.isNoteMode = state.isNoteMode;
     this.gameOver = state.gameOver;
+    this.timerStarted = state.timerStarted || false;
     this.history = [];
     this.selectedCell = null;
     this.isPaused = false;
@@ -836,7 +846,9 @@ class SudokuGame {
 
     this.stopTimer();
     this.updateTimerDisplay();
-    this.startTimer();
+    if (this.timerStarted) {
+      this.startTimer();
+    }
 
     this.updateErrorDisplay();
     this.updateModeIndicator();
