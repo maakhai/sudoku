@@ -333,6 +333,7 @@ class SudokuGame {
         SudokuBoard.clearNotesForNumber(this.notes, row, col, num);
 
         SudokuRenderer.renderBoard(this.board, this.initial, this.notes, this.selectedCell);
+        SudokuRenderer.updateNumpadState(this.board);
         this.selectCell(row, col);
 
         if (SudokuBoard.checkWin(this.board, this.solution)) {
@@ -357,6 +358,7 @@ class SudokuGame {
           SudokuRenderer.removeErrorFlash(cellEl);
           this.board[row][col] = 0;
           SudokuRenderer.renderBoard(this.board, this.initial, this.notes, this.selectedCell);
+          SudokuRenderer.updateNumpadState(this.board);
           this.selectCell(row, col);
           this.errorInProgress = false;
           this.debouncedSave();
@@ -380,6 +382,7 @@ class SudokuGame {
       this.board[row][col] = 0;
       this.notes[row][col].clear();
       SudokuRenderer.renderBoard(this.board, this.initial, this.notes, this.selectedCell);
+      SudokuRenderer.updateNumpadState(this.board);
       this.selectCell(row, col);
       this.debouncedSave();
     }
@@ -407,6 +410,7 @@ class SudokuGame {
     this.notes[action.row][action.col] = action.notes;
 
     SudokuRenderer.renderBoard(this.board, this.initial, this.notes, this.selectedCell);
+    SudokuRenderer.updateNumpadState(this.board);
     this.selectCell(action.row, action.col);
     this.debouncedSave();
   }
