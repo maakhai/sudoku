@@ -4,6 +4,7 @@ const SudokuTimer = (() => {
   let onUpdate = null;
 
   function start(callback) {
+    stop();
     onUpdate = callback;
     interval = setInterval(() => {
       seconds++;

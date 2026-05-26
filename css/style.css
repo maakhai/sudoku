@@ -185,6 +185,7 @@ main {
 .board {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
+  grid-template-rows: repeat(9, 1fr);
   gap: 0;
   background: var(--border-dark);
   border: 3px solid var(--border-dark);
