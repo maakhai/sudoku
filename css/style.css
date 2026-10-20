@@ -155,7 +155,7 @@ header h1 {
   color: var(--text-secondary);
   font-size: 0.7rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -234,7 +234,6 @@ main {
   font-size: 1.5rem;
   cursor: pointer;
   position: relative;
-  transition: background 0.15s;
   user-select: none;
   border: 1px solid var(--border-light);
 }
@@ -343,7 +342,7 @@ main {
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .mode-btn:first-child {
@@ -374,7 +373,7 @@ main {
   background: var(--bg-secondary);
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s, border-color 0.2s;
   position: relative;
   display: flex;
   align-items: center;
@@ -386,7 +385,7 @@ main {
   font-size: 1.3rem;
   position: static;
   color: var(--text-primary);
-  transition: all 0.2s;
+  transition: font-size 0.2s, color 0.2s;
 }
 
 .numpad.candidate-mode .num-btn .num-main {
@@ -426,7 +425,7 @@ main {
   background: var(--bg-secondary);
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s, border-color 0.2s;
   font-size: 0.9rem;
 }
 
@@ -502,7 +501,7 @@ main {
   border: none;
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 .modal-actions button:first-child {

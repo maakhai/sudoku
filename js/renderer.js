@@ -4,108 +4,141 @@ const SudokuRenderer = (() => {
 
   let boardEl, numpadEl, errorsEl, timerEl;
   let cellCache = null;
+  let valueCache = null;
+  let notesCache = null;
+  let numpadButtons = [];
+  let errorDots = [];
 
   function init() {
     boardEl = document.getElementById('board');
     numpadEl = document.getElementById('numpad');
     errorsEl = document.getElementById('errors');
     timerEl = document.getElementById('timer');
-    buildCellCache();
+
+    buildBoard();
+    cacheControls();
   }
 
-  function buildCellCache() {
-    cellCache = Array.from({ length: SIZE }, (_, row) =>
-      Array.from({ length: SIZE }, (_, col) => {
+  function buildBoard() {
+    cellCache = Array.from({ length: SIZE }, () => Array(SIZE));
+    valueCache = Array.from({ length: SIZE }, () => Array(SIZE));
+    notesCache = Array.from({ length: SIZE }, () => Array(SIZE));
+
+    const fragment = document.createDocumentFragment();
+
+    for (let row = 0; row < SIZE; row++) {
+      for (let col = 0; col < SIZE; col++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.dataset.row = row;
         cell.dataset.col = col;
-        return cell;
-      })
-    );
+
+        const valueEl = document.createElement('span');
+        valueEl.className = 'cell-value';
+        cell.appendChild(valueEl);
+
+        const notesGrid = document.createElement('div');
+        notesGrid.className = 'notes-grid';
+        notesGrid.style.display = 'none';
+
+        const noteEls = [];
+        for (let n = 1; n <= SIZE; n++) {
+          const note = document.createElement('div');
+          note.className = 'note';
+          notesGrid.appendChild(note);
+          noteEls.push(note);
+        }
+        cell.appendChild(notesGrid);
+
+        cellCache[row][col] = cell;
+        valueCache[row][col] = valueEl;
+        notesCache[row][col] = { grid: notesGrid, notes: noteEls };
+
+        fragment.appendChild(cell);
+      }
+    }
+
+    boardEl.appendChild(fragment);
   }
 
-  function renderBoard(board, initial, notes, selectedCell) {
-    boardEl.innerHTML = '';
+  function cacheControls() {
+    numpadButtons = Array.from(numpadEl.querySelectorAll('.num-btn'))
+      .map(btn => ({ btn, num: Number(btn.dataset.num) }))
+      .sort((a, b) => a.num - b.num);
+    errorDots = Array.from(errorsEl.querySelectorAll('.error-dot'));
+  }
 
+  // Cells and note slots are created once in buildBoard; renderBoard only patches them.
+  function renderBoard(board, initial, notes) {
     for (let row = 0; row < SIZE; row++) {
       for (let col = 0; col < SIZE; col++) {
         const cell = cellCache[row][col];
-        cell.className = 'cell';
-        cell.textContent = '';
-
+        const value = board[row][col];
         const isGiven = initial[row][col] !== 0;
-        if (isGiven) {
-          cell.classList.add('given');
-          cell.textContent = board[row][col];
-        } else if (board[row][col] !== 0) {
-          cell.classList.add('user-input');
-          cell.textContent = board[row][col];
-        } else if (notes[row][col].size > 0) {
-          const notesGrid = document.createElement('div');
-          notesGrid.className = 'notes-grid';
-          for (let n = 1; n <= SIZE; n++) {
-            const note = document.createElement('div');
-            note.className = 'note';
-            note.textContent = notes[row][col].has(n) ? n : '';
-            notesGrid.appendChild(note);
-          }
-          cell.appendChild(notesGrid);
-        }
+        const hasValue = value !== 0;
 
-        boardEl.appendChild(cell);
+        cell.classList.toggle('given', isGiven);
+        cell.classList.toggle('user-input', !isGiven && hasValue);
+        cell.classList.remove('error', 'error-flash');
+
+        valueCache[row][col].textContent = hasValue ? value : '';
+
+        const notesEntry = notesCache[row][col];
+        const cellNotes = notes[row][col];
+        const showNotes = !hasValue && cellNotes.size > 0;
+
+        notesEntry.grid.style.display = showNotes ? 'grid' : 'none';
+
+        if (showNotes) {
+          for (let n = 1; n <= SIZE; n++) {
+            notesEntry.notes[n - 1].textContent = cellNotes.has(n) ? n : '';
+          }
+        }
       }
     }
   }
 
   function updateHighlights(board, selectedCell) {
-    const cells = boardEl.querySelectorAll('.cell');
-    cells.forEach(cell => {
-      cell.classList.remove('selected', 'highlight-line', 'highlight-same');
-    });
-
-    if (!selectedCell) return;
-
-    const { row, col } = selectedCell;
-    const selectedValue = board[row][col];
-
-    cells.forEach(cell => {
-      const r = parseInt(cell.dataset.row);
-      const c = parseInt(cell.dataset.col);
-
-      if (r === row && c === col) {
-        cell.classList.add('selected');
-      } else if (r === row || c === col) {
-        cell.classList.add('highlight-line');
-      }
-
-      if (selectedValue !== 0 && board[r][c] === selectedValue && !(r === row && c === col)) {
-        cell.classList.add('highlight-same');
-      }
-    });
-  }
-
-  function updateNumpadState(board) {
-    const counts = {};
-    for (let n = 1; n <= SIZE; n++) counts[n] = 0;
+    const hasSelection = selectedCell !== null && selectedCell !== undefined;
+    const selectedRow = hasSelection ? selectedCell.row : -1;
+    const selectedCol = hasSelection ? selectedCell.col : -1;
+    const selectedValue = hasSelection ? board[selectedRow][selectedCol] : 0;
 
     for (let row = 0; row < SIZE; row++) {
       for (let col = 0; col < SIZE; col++) {
-        const val = board[row][col];
-        if (val !== 0) counts[val]++;
+        const cell = cellCache[row][col];
+        const isSelected = hasSelection && row === selectedRow && col === selectedCol;
+        const isInLine = hasSelection && !isSelected && (row === selectedRow || col === selectedCol);
+        const isSameNumber = selectedValue !== 0 &&
+          board[row][col] === selectedValue &&
+          !isSelected;
+
+        cell.classList.toggle('selected', isSelected);
+        cell.classList.toggle('highlight-line', isInLine);
+        cell.classList.toggle('highlight-same', isSameNumber);
+      }
+    }
+  }
+
+  function updateNumpadState(board) {
+    const counts = new Array(SIZE + 1).fill(0);
+
+    for (let row = 0; row < SIZE; row++) {
+      for (let col = 0; col < SIZE; col++) {
+        const value = board[row][col];
+        if (value !== 0) counts[value]++;
       }
     }
 
-    numpadEl.querySelectorAll('.num-btn').forEach(btn => {
-      const num = parseInt(btn.dataset.num);
+    for (const { btn, num } of numpadButtons) {
       const isComplete = counts[num] >= SIZE;
       btn.classList.toggle('disabled', isComplete);
       btn.disabled = isComplete;
-    });
+    }
   }
 
   function getCellElement(row, col) {
-    return boardEl.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+    return cellCache[row][col] || null;
   }
 
   function addErrorFlash(row, col) {
@@ -123,8 +156,7 @@ const SudokuRenderer = (() => {
   }
 
   function updateErrorDisplay(errors) {
-    const dots = errorsEl.querySelectorAll('.error-dot');
-    dots.forEach((dot, i) => {
+    errorDots.forEach((dot, i) => {
       dot.classList.toggle('lost', i < errors);
     });
   }
@@ -132,7 +164,10 @@ const SudokuRenderer = (() => {
   function updateTimerDisplay(seconds) {
     const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
     const secs = (seconds % 60).toString().padStart(2, '0');
-    timerEl.textContent = `${mins}:${secs}`;
+    const text = `${mins}:${secs}`;
+    if (timerEl.textContent !== text) {
+      timerEl.textContent = text;
+    }
   }
 
   function formatTime(seconds) {

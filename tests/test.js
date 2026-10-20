@@ -177,6 +177,29 @@ describe('Count Solutions', () => {
   assert(countSolutions(incomplete) >= 1, 'Incomplete board has at least 1 solution');
 });
 
+describe('Solver Correctness', () => {
+  const empty = Array.from({ length: 9 }, () => Array(9).fill(0));
+  assert(countSolutions(empty, 1) === 1, 'Empty board respects limit 1');
+  assert(countSolutions(empty, 2) === 2, 'Empty board respects limit 2');
+
+  const duplicate = generateSolution();
+  duplicate[0][1] = duplicate[0][0];
+  assert(countSolutions(duplicate) === 0, 'Board with duplicate givens has no solutions');
+
+  const board = generateSolution();
+  board[0][0] = 0;
+  board[4][4] = 0;
+  const snapshot = JSON.stringify(board);
+  countSolutions(board);
+  assert(JSON.stringify(board) === snapshot, 'countSolutions restores the board after counting');
+
+  const solution = generateSolution();
+  const solutionSnapshot = JSON.stringify(solution);
+  const puzzle = createPuzzle(solution, 40);
+  assert(JSON.stringify(solution) === solutionSnapshot, 'createPuzzle does not mutate the solution');
+  assert(countSolutions(puzzle.map(row => [...row])) === 1, 'Every generated puzzle has exactly 1 solution');
+});
+
 describe('Notes System', () => {
   const notes = Array.from({ length: 9 }, () =>
     Array.from({ length: 9 }, () => new Set())

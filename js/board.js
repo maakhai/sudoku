@@ -2,6 +2,16 @@ const SudokuBoard = (() => {
   const SIZE = SudokuConstants.BOARD_SIZE;
   const BOX = SudokuConstants.BOX_SIZE;
   const ALL_NUMS = Array.from({ length: SIZE }, (_, i) => i + 1);
+  const FULL_MASK = (1 << SIZE) - 1;
+
+  const POPCOUNT = new Uint8Array(FULL_MASK + 1);
+  const NUM_FOR_BIT = new Uint8Array(FULL_MASK + 1);
+  for (let mask = 1; mask <= FULL_MASK; mask++) {
+    POPCOUNT[mask] = POPCOUNT[mask >> 1] + (mask & 1);
+  }
+  for (let num = 1; num <= SIZE; num++) {
+    NUM_FOR_BIT[1 << (num - 1)] = num;
+  }
 
   function findEmpty(board) {
     for (let row = 0; row < SIZE; row++) {
@@ -61,29 +71,93 @@ const SudokuBoard = (() => {
   }
 
   function countSolutions(board, limit = 2) {
+    if (limit <= 0) return 0;
+
+    const rowMask = new Int16Array(SIZE);
+    const colMask = new Int16Array(SIZE);
+    const boxMask = new Int16Array(SIZE);
+    const emptyPositions = [];
+
+    for (let row = 0; row < SIZE; row++) {
+      for (let col = 0; col < SIZE; col++) {
+        const value = board[row][col];
+        if (value === 0) {
+          emptyPositions.push(row * SIZE + col);
+          continue;
+        }
+
+        const bit = 1 << (value - 1);
+        const box = Math.floor(row / BOX) * BOX + Math.floor(col / BOX);
+        if ((rowMask[row] & bit) || (colMask[col] & bit) || (boxMask[box] & bit)) {
+          return 0;
+        }
+
+        rowMask[row] |= bit;
+        colMask[col] |= bit;
+        boxMask[box] |= bit;
+      }
+    }
+
     let count = 0;
 
-    const solve = (b) => {
+    const solve = () => {
       if (count >= limit) return;
 
-      const empty = findEmpty(b);
-      if (!empty) {
+      // MRV: pick the empty cell with the fewest candidates.
+      let bestPos = -1;
+      let bestMask = 0;
+      let bestCandidateCount = SIZE + 1;
+
+      for (let i = 0; i < emptyPositions.length; i++) {
+        const pos = emptyPositions[i];
+        const row = Math.floor(pos / SIZE);
+        const col = pos % SIZE;
+        if (board[row][col] !== 0) continue;
+
+        const box = Math.floor(row / BOX) * BOX + Math.floor(col / BOX);
+        const available = FULL_MASK & ~(rowMask[row] | colMask[col] | boxMask[box]);
+        if (available === 0) return;
+
+        const candidateCount = POPCOUNT[available];
+        if (candidateCount < bestCandidateCount) {
+          bestCandidateCount = candidateCount;
+          bestMask = available;
+          bestPos = pos;
+          if (candidateCount === 1) break;
+        }
+      }
+
+      if (bestPos === -1) {
         count++;
         return;
       }
 
-      const [row, col] = empty;
-      for (let num = 1; num <= SIZE; num++) {
-        if (count >= limit) return;
-        if (isValid(b, row, col, num)) {
-          b[row][col] = num;
-          solve(b);
-          b[row][col] = 0;
-        }
+      const row = Math.floor(bestPos / SIZE);
+      const col = bestPos % SIZE;
+      const box = Math.floor(row / BOX) * BOX + Math.floor(col / BOX);
+
+      let mask = bestMask;
+      while (mask !== 0) {
+        const bit = mask & -mask;
+        mask ^= bit;
+
+        board[row][col] = NUM_FOR_BIT[bit];
+        rowMask[row] |= bit;
+        colMask[col] |= bit;
+        boxMask[box] |= bit;
+
+        solve();
+
+        rowMask[row] &= ~bit;
+        colMask[col] &= ~bit;
+        boxMask[box] &= ~bit;
+        board[row][col] = 0;
+
+        if (count >= limit) break;
       }
     };
 
-    solve(board);
+    solve();
     return count;
   }
 
@@ -96,12 +170,13 @@ const SudokuBoard = (() => {
     let removed = 0;
     for (const [row, col] of positions) {
       if (removed >= cellsToRemove) break;
+      if (puzzle[row][col] === 0) continue;
 
       const backup = puzzle[row][col];
       puzzle[row][col] = 0;
 
-      const copy = puzzle.map(r => [...r]);
-      if (countSolutions(copy) === 1) {
+      // countSolutions restores the board itself, so no copy is needed here.
+      if (countSolutions(puzzle) === 1) {
         removed++;
       } else {
         puzzle[row][col] = backup;

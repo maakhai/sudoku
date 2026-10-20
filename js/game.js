@@ -13,6 +13,7 @@ class SudokuGame {
     this.timerStarted = false;
     this.saveTimeout = null;
     this.errorInProgress = false;
+    this.dirty = false;
 
     this.init();
   }
@@ -127,7 +128,7 @@ class SudokuGame {
       }
     });
 
-    window.addEventListener('beforeunload', () => {
+    window.addEventListener('pagehide', () => {
       this.saveGameState();
     });
   }
@@ -230,15 +231,16 @@ class SudokuGame {
   togglePause() {
     if (this.gameOver) return;
 
-    this.isPaused = !this.isPaused;
-
-    if (this.isPaused) {
+    if (!this.isPaused) {
+      this.saveGameState();
+      this.isPaused = true;
       SudokuTimer.stop();
       document.getElementById('board').classList.add('paused');
       this.boardOverlayEl.classList.add('visible');
       this.pauseBtnEl.innerHTML = '&#9654;';
       this.pauseBtnEl.title = 'Retomar';
     } else {
+      this.isPaused = false;
       SudokuTimer.start((s) => SudokuRenderer.updateTimerDisplay(s));
       document.getElementById('board').classList.remove('paused');
       this.boardOverlayEl.classList.remove('visible');
@@ -270,7 +272,7 @@ class SudokuGame {
     }
 
     SudokuRenderer.updateErrorDisplay(0);
-    SudokuRenderer.renderBoard(this.board, this.initial, this.notes, this.selectedCell);
+    SudokuRenderer.renderBoard(this.board, this.initial, this.notes);
     SudokuRenderer.updateHighlights(this.board, this.selectedCell);
     SudokuRenderer.updateNumpadState(this.board);
     this.gameOverModal.style.display = 'none';
@@ -294,6 +296,7 @@ class SudokuGame {
   }
 
   selectCell(row, col) {
+    if (this.board.length !== SudokuConstants.BOARD_SIZE) return;
     this.selectedCell = { row, col };
     SudokuRenderer.updateHighlights(this.board, this.selectedCell);
   }
@@ -320,7 +323,7 @@ class SudokuGame {
         this.notes[row][col].add(num);
       }
 
-      SudokuRenderer.renderBoard(this.board, this.initial, this.notes, this.selectedCell);
+      SudokuRenderer.renderBoard(this.board, this.initial, this.notes);
       this.selectCell(row, col);
       this.debouncedSave();
     } else {
@@ -332,7 +335,7 @@ class SudokuGame {
 
         SudokuBoard.clearNotesForNumber(this.notes, row, col, num);
 
-        SudokuRenderer.renderBoard(this.board, this.initial, this.notes, this.selectedCell);
+        SudokuRenderer.renderBoard(this.board, this.initial, this.notes);
         SudokuRenderer.updateNumpadState(this.board);
         this.selectCell(row, col);
 
@@ -346,7 +349,7 @@ class SudokuGame {
         SudokuRenderer.updateErrorDisplay(this.errors);
 
         this.board[row][col] = num;
-        SudokuRenderer.renderBoard(this.board, this.initial, this.notes, this.selectedCell);
+        SudokuRenderer.renderBoard(this.board, this.initial, this.notes);
         this.selectCell(row, col);
 
         const cellEl = SudokuRenderer.addErrorFlash(row, col);
@@ -357,7 +360,7 @@ class SudokuGame {
 
           SudokuRenderer.removeErrorFlash(cellEl);
           this.board[row][col] = 0;
-          SudokuRenderer.renderBoard(this.board, this.initial, this.notes, this.selectedCell);
+          SudokuRenderer.renderBoard(this.board, this.initial, this.notes);
           SudokuRenderer.updateNumpadState(this.board);
           this.selectCell(row, col);
           this.errorInProgress = false;
@@ -381,7 +384,7 @@ class SudokuGame {
       this.saveHistory(row, col, 'clear');
       this.board[row][col] = 0;
       this.notes[row][col].clear();
-      SudokuRenderer.renderBoard(this.board, this.initial, this.notes, this.selectedCell);
+      SudokuRenderer.renderBoard(this.board, this.initial, this.notes);
       SudokuRenderer.updateNumpadState(this.board);
       this.selectCell(row, col);
       this.debouncedSave();
@@ -409,7 +412,7 @@ class SudokuGame {
     this.board[action.row][action.col] = action.value;
     this.notes[action.row][action.col] = action.notes;
 
-    SudokuRenderer.renderBoard(this.board, this.initial, this.notes, this.selectedCell);
+    SudokuRenderer.renderBoard(this.board, this.initial, this.notes);
     SudokuRenderer.updateNumpadState(this.board);
     this.selectCell(action.row, action.col);
     this.debouncedSave();
@@ -433,6 +436,7 @@ class SudokuGame {
     SudokuRenderer.renderBestTimes(difficulty, seconds);
 
     SudokuStorage.clearGameState();
+    this.dirty = false;
 
     setTimeout(() => {
       this.winModal.style.display = 'flex';
@@ -443,6 +447,7 @@ class SudokuGame {
     this.gameOver = true;
     SudokuTimer.stop();
     SudokuStorage.clearGameState();
+    this.dirty = false;
 
     setTimeout(() => {
       this.gameOverModal.style.display = 'flex';
@@ -450,7 +455,12 @@ class SudokuGame {
   }
 
   saveGameState() {
-    if (this.gameOver || this.isPaused) return;
+    if (this.gameOver || this.board.length !== SudokuConstants.BOARD_SIZE) return;
+
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+    }
 
     const state = {
       board: this.board,
@@ -464,12 +474,18 @@ class SudokuGame {
       gameOver: this.gameOver,
       timerStarted: this.timerStarted
     };
-    SudokuStorage.saveGameState(state);
+    if (SudokuStorage.saveGameState(state)) {
+      this.dirty = false;
+    }
   }
 
   debouncedSave() {
+    this.dirty = true;
     if (this.saveTimeout) clearTimeout(this.saveTimeout);
-    this.saveTimeout = setTimeout(() => this.saveGameState(), 300);
+    this.saveTimeout = setTimeout(() => {
+      this.saveTimeout = null;
+      this.saveGameState();
+    }, 300);
   }
 
   restoreGameState(state) {
@@ -484,6 +500,7 @@ class SudokuGame {
     this.history = [];
     this.selectedCell = null;
     this.errorInProgress = false;
+    this.dirty = false;
 
     this.difficultySelect.value = state.difficulty;
     this.resetPauseState();
@@ -497,7 +514,7 @@ class SudokuGame {
 
     SudokuRenderer.updateErrorDisplay(this.errors);
     this.updateModeIndicator();
-    SudokuRenderer.renderBoard(this.board, this.initial, this.notes, this.selectedCell);
+    SudokuRenderer.renderBoard(this.board, this.initial, this.notes);
     SudokuRenderer.updateHighlights(this.board, this.selectedCell);
     SudokuRenderer.updateNumpadState(this.board);
   }
@@ -521,8 +538,8 @@ class SudokuGame {
   }
 
   startAutoSave() {
-    setInterval(() => {
-      if (!this.gameOver && !this.isPaused) {
+    this.autoSaveInterval = setInterval(() => {
+      if (!this.gameOver && !this.isPaused && this.dirty) {
         this.saveGameState();
       }
     }, SudokuConstants.AUTO_SAVE_INTERVAL);
