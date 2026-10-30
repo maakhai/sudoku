@@ -94,7 +94,7 @@ describe('Availability and flags', () => {
 describe('Settings', () => {
   reset();
   const defaults = SudokuStorage.getSettings();
-  assert(defaults.theme === 'system', 'Default theme is system');
+  assert(defaults.theme === 'dark', 'Default theme is dark');
   assert(defaults.errorLimit === 3, 'Default error limit is 3');
   assert(defaults.timerStart === 'first-move', 'Default timer starts on first move');
 
@@ -119,10 +119,18 @@ describe('Settings', () => {
     haptics: 'yes'
   }));
   const sanitized = SudokuStorage.getSettings();
-  assert(sanitized.theme === 'system', 'Invalid theme falls back to system');
+  assert(sanitized.theme === 'dark', 'Invalid theme falls back to dark');
   assert(sanitized.errorLimit === 3, 'Invalid error limit falls back to 3');
   assert(sanitized.timerStart === 'first-move', 'Invalid timer setting falls back');
   assert(sanitized.haptics === true, 'Invalid boolean falls back to default');
+
+  localStorage.setItem('sudoku-settings', JSON.stringify({ theme: 'system' }));
+  assert(SudokuStorage.getSettings().theme === 'dark',
+    'Legacy system theme migrates to dark');
+
+  SudokuStorage.saveSettings({ ...defaults, theme: 'system' });
+  assert(SudokuStorage.getSettings().theme === 'system',
+    'Explicit system theme persists after migration');
 });
 
 describe('Best times', () => {

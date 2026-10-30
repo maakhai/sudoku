@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="Jogo de Sudoku com notas, cronômetro, recordes, estatísticas e suporte a teclado.">
-  <meta name="theme-color" content="#f4f7fb" id="theme-color-meta">
+  <meta name="theme-color" content="#111111" id="theme-color-meta">
   <title>Sudoku</title>
   <script>
     (function () {
       try {
         var settings = JSON.parse(localStorage.getItem('sudoku-settings') || '{}');
-        var theme = settings.theme || 'system';
+        var theme = settings.theme || 'dark';
+        if (!settings.version && theme === 'system') theme = 'dark';
         var dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
         document.documentElement.dataset.theme = dark ? 'dark' : 'light';
         document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
@@ -27,38 +28,12 @@
 
   <div class="container">
     <header class="app-header">
-      <div class="brand-row">
-        <div class="brand">
-          <h1>Sudoku</h1>
-          <p class="tagline">Clássico, no seu ritmo.</p>
-        </div>
-        <div class="header-actions" role="group" aria-label="Ferramentas">
-          <button type="button" class="icon-btn" id="theme-btn" aria-label="Mudar para tema escuro" title="Tema">
-            <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <circle cx="12" cy="12" r="4"></circle>
-              <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"></path>
-            </svg>
-            <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
-            </svg>
-          </button>
-          <button type="button" class="icon-btn" id="help-btn" aria-label="Como jogar e atalhos" title="Como jogar (?)">
-            <span aria-hidden="true">?</span>
-          </button>
-          <button type="button" class="icon-btn" id="records-btn" aria-label="Recordes e estatísticas" title="Recordes">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"></path>
-              <path d="M7 6H4v1a4 4 0 0 0 4 4M17 6h3v1a4 4 0 0 1-4 4"></path>
-            </svg>
-          </button>
-          <button type="button" class="icon-btn" id="settings-btn" aria-label="Configurações" title="Configurações">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.34-1.87L4.2 6.97a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 8.96 4.6 1.7 1.7 0 0 0 10 3.05V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.12.44.47.79.91.91H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51.95z"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
+      <h1>Sudoku</h1>
+      <button type="button" class="icon-btn menu-btn" id="menu-btn" aria-label="Abrir menu" aria-haspopup="dialog" title="Menu">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 7h16M4 12h16M4 17h16"></path>
+        </svg>
+      </button>
 
       <div class="game-toolbar">
         <div class="difficulty-control">
@@ -97,14 +72,6 @@
 
     <div id="storage-warning" class="banner banner--warning" role="status" hidden>
       <span>O progresso não será salvo neste navegador.</span>
-    </div>
-
-    <div id="first-run-tip" class="banner banner--tip" hidden>
-      <p><strong>Novo por aqui?</strong> Use o modo <strong>Notas</strong> para rascunhar candidatos. Pressione <kbd>?</kbd> para ver os atalhos.</p>
-      <div class="banner-actions">
-        <button type="button" class="btn btn-secondary btn-sm" id="tip-help-btn">Como jogar</button>
-        <button type="button" class="icon-btn icon-btn--small" id="dismiss-tip" aria-label="Fechar dica">×</button>
-      </div>
     </div>
 
     <main class="game-layout">
@@ -166,14 +133,61 @@
         </div>
       </aside>
     </main>
-
-    <footer class="app-footer">
-      <p>Jogo local, sem anúncios. Seu progresso fica neste navegador.</p>
-    </footer>
   </div>
 
   <div id="live-region" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+
+  <dialog class="dialog dialog--menu" id="menu-dialog" aria-labelledby="menu-title">
+    <div class="dialog-content">
+      <div class="dialog-head">
+        <h2 id="menu-title">Menu</h2>
+        <button type="button" class="icon-btn icon-btn--small" data-close aria-label="Fechar menu">×</button>
+      </div>
+      <div class="menu-list">
+        <button type="button" class="menu-item" id="help-btn" aria-label="Como jogar e atalhos" autofocus>
+          <span class="menu-question" aria-hidden="true">?</span>
+          <span class="menu-item-text">
+            <span class="menu-item-label">Como jogar</span>
+            <small>Regras, erros e atalhos</small>
+          </span>
+        </button>
+        <button type="button" class="menu-item" id="records-btn" aria-label="Recordes e estatísticas">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"></path>
+            <path d="M7 6H4v1a4 4 0 0 0 4 4M17 6h3v1a4 4 0 0 1-4 4"></path>
+          </svg>
+          <span class="menu-item-text">
+            <span class="menu-item-label">Recordes e estatísticas</span>
+            <small>Melhores tempos e desempenho</small>
+          </span>
+        </button>
+        <button type="button" class="menu-item" id="settings-btn" aria-label="Configurações">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.34-1.87L4.2 6.97a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 8.96 4.6 1.7 1.7 0 0 0 10 3.05V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.12.44.47.79.91.91H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51.95z"></path>
+          </svg>
+          <span class="menu-item-text">
+            <span class="menu-item-label">Configurações</span>
+            <small>Tema, erros, cronômetro e notas</small>
+          </span>
+        </button>
+        <button type="button" class="menu-item" id="theme-btn" aria-label="Mudar para tema claro" title="Alternar tema">
+          <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"></path>
+          </svg>
+          <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+          </svg>
+          <span class="menu-item-text">
+            <span class="menu-item-label" id="theme-label">Tema escuro</span>
+            <small>Clique para alternar</small>
+          </span>
+        </button>
+      </div>
+    </div>
+  </dialog>
 
   <dialog class="dialog" id="new-game-dialog" aria-labelledby="new-game-title">
     <div class="dialog-content">
@@ -214,7 +228,7 @@
     </div>
   </dialog>
 
-  <dialog class="dialog dialog--wide" id="win-dialog" aria-labelledby="win-title">
+  <dialog class="dialog" id="win-dialog" aria-labelledby="win-title">
     <div class="dialog-content">
       <div class="dialog-head">
         <h2 id="win-title">Parabéns!</h2>

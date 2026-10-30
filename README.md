@@ -12,7 +12,8 @@ Jogo de Sudoku em HTML, CSS e JavaScript puro, com foco em acessibilidade, uso n
 - Salvamento automático, retomada de jogo e aviso de conflito entre abas.
 - Recordes por dificuldade e estatísticas de partidas, vitórias, sequências, tempo médio e dicas.
 - Configurações de tema, limite de erros, política de erros, notas automáticas, realces, cronômetro e vibração.
-- Tema claro, escuro e "seguir o sistema", com contraste revisado.
+- Tema escuro como padrão, com opções claro e "seguir o sistema", e contraste revisado.
+- Layout compacto com cabeçalho centralizado, tabuleiro de 450px e menu único de ferramentas.
 - Layout fluido para celular, alvos de toque maiores e respeito a `prefers-reduced-motion`.
 - PWA instalável com funcionamento offline.
 
@@ -65,6 +66,7 @@ manifest.webmanifest       Configuração PWA
 ## Decisões de UX
 
 - **Prevenção de perda:** novo jogo e troca de dificuldade não descartam uma partida em andamento sem confirmação.
+- **Visual de jogo, não de dashboard:** cabeçalho centralizado, tabuleiro compacto, dark quente e menu único no topo.
 - **Erros não contaminam o tabuleiro:** no modo padrão, o número errado é apenas um estado visual transitório. Ele nunca é gravado no tabuleiro nem no save. Isso elimina a corrida entre o flash de erro, novo jogo, pausa e desfazer.
 - **Pausa de verdade:** enquanto pausado, tabuleiro e controles ficam inertes; o cronômetro para e a sidebar não aceita entrada.
 - **Atalhos com escopo:** teclas de jogo não capturam botões, selects ou campos. Espaço ativa o controle focado; no tabuleiro, alterna Notas.
@@ -85,6 +87,8 @@ As chaves usadas são:
 - `sudoku-seen-tip`
 
 O save atual tem `SAVE_VERSION = 2`. Saves inválidos são descartados em vez de quebrar a inicialização. Se o `localStorage` estiver indisponível, o jogo avisa que o progresso não será salvo.
+
+As configurações têm `SETTINGS_VERSION = 2`. O tema padrão é escuro; configurações antigas com `system` migram uma única vez para `dark`. Depois disso, claro e "seguir o sistema" continuam disponíveis.
 
 ## PWA e cache
 

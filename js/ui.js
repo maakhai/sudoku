@@ -1,6 +1,6 @@
 const SudokuUI = (() => {
-  const DARK_THEME_COLOR = '#0f141b';
-  const LIGHT_THEME_COLOR = '#f4f7fb';
+  const DARK_THEME_COLOR = '#111111';
+  const LIGHT_THEME_COLOR = '#f4f1ec';
 
   let toastTimer = null;
   let announceTimer = null;
@@ -39,6 +39,11 @@ const SudokuUI = (() => {
         resolved === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'
       );
       themeButton.setAttribute('title', resolved === 'dark' ? 'Tema claro' : 'Tema escuro');
+    }
+
+    const themeLabel = document.getElementById('theme-label');
+    if (themeLabel) {
+      themeLabel.textContent = resolved === 'dark' ? 'Tema escuro' : 'Tema claro';
     }
 
     return resolved;

@@ -359,8 +359,10 @@ const SudokuStorage = (() => {
     if (!loaded || typeof loaded !== 'object') return { ...defaults };
 
     const settings = { ...defaults };
+    const isLegacy = !Number.isFinite(Number(loaded.version));
 
     if (SudokuConstants.THEMES.includes(loaded.theme)) settings.theme = loaded.theme;
+    if (isLegacy && settings.theme === 'system') settings.theme = defaults.theme;
     if (SudokuConstants.ERROR_LIMITS.includes(Number(loaded.errorLimit))) {
       settings.errorLimit = Number(loaded.errorLimit);
     }
@@ -376,7 +378,10 @@ const SudokuStorage = (() => {
   }
 
   function saveSettings(settings) {
-    return save(KEYS.SETTINGS, settings);
+    return save(KEYS.SETTINGS, {
+      ...settings,
+      version: SudokuConstants.SETTINGS_VERSION
+    });
   }
 
   function saveDifficulty(difficulty) {

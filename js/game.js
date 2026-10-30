@@ -96,9 +96,8 @@ class SudokuGame {
     this.hintCountEl = byId('hint-count');
     this.storageWarningEl = byId('storage-warning');
     this.generatingOverlayEl = byId('generating-overlay');
-    this.firstRunTipEl = byId('first-run-tip');
-    this.dismissTipBtn = byId('dismiss-tip');
-    this.tipHelpBtn = byId('tip-help-btn');
+    this.menuBtn = byId('menu-btn');
+    this.menuDialog = byId('menu-dialog');
     this.themeBtn = byId('theme-btn');
     this.helpBtn = byId('help-btn');
     this.recordsBtn = byId('records-btn');
@@ -197,6 +196,8 @@ class SudokuGame {
     window.addEventListener('pagehide', () => this.saveGameState());
     window.addEventListener('storage', event => this.handleStorageEvent(event));
 
+    this.menuBtn.addEventListener('click', () => this.openMenu());
+
     this.themeBtn.addEventListener('click', () => {
       const next = SudokuUI.toggleTheme();
       this.settings.theme = next;
@@ -206,9 +207,18 @@ class SudokuGame {
       SudokuUI.announce(`Tema ${next === 'dark' ? 'escuro' : 'claro'} ativado.`);
     });
 
-    this.helpBtn.addEventListener('click', () => this.openHelp());
-    this.recordsBtn.addEventListener('click', () => this.openRecords());
-    this.settingsBtn.addEventListener('click', () => this.openSettings());
+    this.helpBtn.addEventListener('click', () => {
+      SudokuUI.closeDialog(this.menuDialog);
+      this.openHelp();
+    });
+    this.recordsBtn.addEventListener('click', () => {
+      SudokuUI.closeDialog(this.menuDialog);
+      this.openRecords();
+    });
+    this.settingsBtn.addEventListener('click', () => {
+      SudokuUI.closeDialog(this.menuDialog);
+      this.openSettings();
+    });
 
     this.newGameCancelBtn.addEventListener('click', () => this.cancelNewGame());
     this.newGameConfirmBtn.addEventListener('click', () => this.confirmNewGame());
@@ -229,16 +239,6 @@ class SudokuGame {
       SudokuUI.closeDialog(this.settingsDialog);
       SudokuUI.openDialog(this.resetStatsDialog);
     });
-
-    this.dismissTipBtn.addEventListener('click', () => {
-      SudokuStorage.setFlag(SudokuConstants.STORAGE_KEYS.SEEN_TIP, true);
-      this.firstRunTipEl.hidden = true;
-    });
-    this.tipHelpBtn.addEventListener('click', () => {
-      SudokuStorage.setFlag(SudokuConstants.STORAGE_KEYS.SEEN_TIP, true);
-      this.firstRunTipEl.hidden = true;
-      this.openHelp();
-    });
   }
 
   setupDialogs() {
@@ -255,6 +255,7 @@ class SudokuGame {
     SudokuUI.closeFromBackdrop(this.winDialog);
     SudokuUI.closeFromBackdrop(this.gameOverDialog);
     SudokuUI.closeFromBackdrop(this.resetStatsDialog);
+    SudokuUI.closeFromBackdrop(this.menuDialog);
 
     this.newGameDialog.addEventListener('cancel', event => {
       event.preventDefault();
@@ -266,6 +267,7 @@ class SudokuGame {
     });
 
     const autoResumeDialogs = [
+      this.menuDialog,
       this.newGameDialog,
       this.helpDialog,
       this.settingsDialog,
@@ -703,7 +705,7 @@ class SudokuGame {
   }
 
   closeGameDialogs() {
-    [this.newGameDialog, this.resumeDialog, this.gameOverDialog, this.winDialog].forEach(dialog => {
+    [this.menuDialog, this.newGameDialog, this.resumeDialog, this.gameOverDialog, this.winDialog].forEach(dialog => {
       SudokuUI.closeDialog(dialog);
     });
   }
@@ -793,10 +795,19 @@ class SudokuGame {
     document.title = 'Sudoku';
   }
 
+  openMenu() {
+    if (this.isGenerating) return;
+    const wasGameOver = this.gameOver;
+    this.pauseForDialog();
+    if (!wasGameOver && this.gameOver) return;
+    SudokuUI.openDialog(this.menuDialog);
+  }
+
   openHelp() {
     if (this.isGenerating) return;
+    const wasGameOver = this.gameOver;
     this.pauseForDialog();
-    if (this.gameOver) return;
+    if (!wasGameOver && this.gameOver) return;
     SudokuUI.openDialog(this.helpDialog);
   }
 
@@ -809,14 +820,16 @@ class SudokuGame {
         this.settingsNoteTimer = null;
       }
     }
+    const wasGameOver = this.gameOver;
     this.pauseForDialog();
-    if (this.gameOver) return;
+    if (!wasGameOver && this.gameOver) return;
     SudokuUI.openDialog(this.settingsDialog);
   }
 
   openRecords() {
+    const wasGameOver = this.gameOver;
     this.pauseForDialog();
-    if (this.gameOver) return;
+    if (!wasGameOver && this.gameOver) return;
     this.recordsDifficulty.value = this.difficulty;
     this.renderRecords();
     SudokuUI.openDialog(this.recordsDialog);
@@ -841,10 +854,10 @@ class SudokuGame {
     SudokuRenderer.setBusy(busy);
     this.newGameBtn.disabled = busy;
     this.difficultySelect.disabled = busy;
+    this.menuBtn.disabled = busy;
     this.helpBtn.disabled = busy;
     this.recordsBtn.disabled = busy;
     this.settingsBtn.disabled = busy;
-    if (this.tipHelpBtn) this.tipHelpBtn.disabled = busy;
     this.updateActionButtons();
   }
 
@@ -972,7 +985,6 @@ class SudokuGame {
 
   setMode(mode) {
     if (!this.canInteract()) return;
-    this.dismissFirstRunTip();
     const isNoteMode = mode === 'notes';
     if (this.isNoteMode === isNoteMode) return;
     this.isNoteMode = isNoteMode;
@@ -980,12 +992,6 @@ class SudokuGame {
     this.renderAll();
     this.debouncedSave();
     SudokuUI.announce(isNoteMode ? 'Modo Notas ativado.' : 'Modo Normal ativado.');
-  }
-
-  dismissFirstRunTip() {
-    if (!this.firstRunTipEl || this.firstRunTipEl.hidden) return;
-    this.firstRunTipEl.hidden = true;
-    SudokuStorage.setFlag(SudokuConstants.STORAGE_KEYS.SEEN_TIP, true);
   }
 
   toggleMode() {
@@ -1012,7 +1018,6 @@ class SudokuGame {
     if (this.initial[row][col] !== 0 || this.hinted[row][col]) return;
     if (this.countPlaced(num) >= SudokuConstants.BOARD_SIZE) return;
 
-    this.dismissFirstRunTip();
     this.startTimerIfNeeded();
 
     if (this.isNoteMode) {
@@ -1195,7 +1200,6 @@ class SudokuGame {
       return;
     }
 
-    this.dismissFirstRunTip();
     this.startTimerIfNeeded();
     this.pushHistory();
 
@@ -1537,7 +1541,12 @@ class SudokuGame {
 
   maybeShowFirstRunTip() {
     if (SudokuStorage.getFlag(SudokuConstants.STORAGE_KEYS.SEEN_TIP)) return;
-    this.firstRunTipEl.hidden = false;
+    if (SudokuUI.isAnyDialogOpen()) {
+      setTimeout(() => this.maybeShowFirstRunTip(), 1200);
+      return;
+    }
+    SudokuStorage.setFlag(SudokuConstants.STORAGE_KEYS.SEEN_TIP, true);
+    SudokuUI.showToast('Novo por aqui? Abra o menu e escolha “Como jogar”.', 'info', 5200);
   }
 
   registerServiceWorker() {

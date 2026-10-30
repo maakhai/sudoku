@@ -7,6 +7,7 @@ const SudokuConstants = {
   ERROR_FLASH_DURATION: 700,
   MAX_ERRORS: 3,
   SAVE_VERSION: 2,
+  SETTINGS_VERSION: 2,
   TOAST_DURATION: 3200,
 
   difficultyConfig: {
@@ -46,7 +47,7 @@ const SudokuConstants = {
   BEST_TIMES_LIMIT: 5,
 
   SETTINGS_DEFAULTS: {
-    theme: 'system',
+    theme: 'dark',
     errorLimit: 3,
     keepMistakes: false,
     autoRemoveNotes: true,
