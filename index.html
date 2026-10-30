@@ -2,17 +2,67 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Jogo de Sudoku com notas, cronômetro, recordes, estatísticas e suporte a teclado.">
+  <meta name="theme-color" content="#f4f7fb" id="theme-color-meta">
   <title>Sudoku</title>
+  <script>
+    (function () {
+      try {
+        var settings = JSON.parse(localStorage.getItem('sudoku-settings') || '{}');
+        var theme = settings.theme || 'system';
+        var dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <a class="skip-link" href="#board">Ir para o tabuleiro</a>
+
   <div class="container">
-    <header>
-      <h1>Sudoku</h1>
-      <div class="controls">
-        <div class="difficulty-selector">
-          <label for="difficulty">Dificuldade:</label>
+    <header class="app-header">
+      <div class="brand-row">
+        <div class="brand">
+          <h1>Sudoku</h1>
+          <p class="tagline">Clássico, no seu ritmo.</p>
+        </div>
+        <div class="header-actions" role="group" aria-label="Ferramentas">
+          <button type="button" class="icon-btn" id="theme-btn" aria-label="Mudar para tema escuro" title="Tema">
+            <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"></path>
+            </svg>
+            <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+            </svg>
+          </button>
+          <button type="button" class="icon-btn" id="help-btn" aria-label="Como jogar e atalhos" title="Como jogar (?)">
+            <span aria-hidden="true">?</span>
+          </button>
+          <button type="button" class="icon-btn" id="records-btn" aria-label="Recordes e estatísticas" title="Recordes">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"></path>
+              <path d="M7 6H4v1a4 4 0 0 0 4 4M17 6h3v1a4 4 0 0 1-4 4"></path>
+            </svg>
+          </button>
+          <button type="button" class="icon-btn" id="settings-btn" aria-label="Configurações" title="Configurações">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.34-1.87L4.2 6.97a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 8.96 4.6 1.7 1.7 0 0 0 10 3.05V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.12.44.47.79.91.91H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51.95z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="game-toolbar">
+        <div class="difficulty-control">
+          <label for="difficulty">Dificuldade</label>
           <select id="difficulty">
             <option value="easy">Fácil</option>
             <option value="medium" selected>Médio</option>
@@ -20,103 +70,343 @@
             <option value="professional">Profissional</option>
             <option value="master">Mestre</option>
           </select>
-          <button id="new-game-btn">Novo Jogo</button>
         </div>
-        <div class="game-info">
-          <div class="errors" id="errors">
-            <span class="error-dot"></span>
-            <span class="error-dot"></span>
-            <span class="error-dot"></span>
+
+        <button type="button" id="new-game-btn" class="btn btn-primary">Novo jogo</button>
+
+        <div class="game-status">
+          <div class="error-status" id="error-status">
+            <span class="status-label">Erros</span>
+            <span class="error-count" id="error-count">0/3</span>
+            <span class="error-dots" id="errors" aria-hidden="true"></span>
           </div>
-          <div class="timer-container">
-            <div class="timer" id="timer">00:00</div>
-            <button id="pause-btn" class="pause-btn" title="Pausar">&#9642;&#9642;</button>
+          <div class="timer-group">
+            <span class="timer" id="timer" aria-label="Tempo de jogo: 0 segundos">00:00</span>
+            <button type="button" class="icon-btn pause-btn" id="pause-btn" aria-label="Pausar jogo" aria-pressed="false" title="Pausar (Esc)">
+              <svg class="icon icon-pause" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M9 5v14M15 5v14"></path>
+              </svg>
+              <svg class="icon icon-play" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M8 5l11 7-11 7z"></path>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
     </header>
 
-    <main>
-      <div class="board-container">
-        <div class="board" id="board"></div>
-        <div class="board-overlay" id="board-overlay">
-          <span>Jogo Pausado</span>
-        </div>
+    <div id="storage-warning" class="banner banner--warning" role="status" hidden>
+      <span>O progresso não será salvo neste navegador.</span>
+    </div>
+
+    <div id="first-run-tip" class="banner banner--tip" hidden>
+      <p><strong>Novo por aqui?</strong> Use o modo <strong>Notas</strong> para rascunhar candidatos. Pressione <kbd>?</kbd> para ver os atalhos.</p>
+      <div class="banner-actions">
+        <button type="button" class="btn btn-secondary btn-sm" id="tip-help-btn">Como jogar</button>
+        <button type="button" class="icon-btn icon-btn--small" id="dismiss-tip" aria-label="Fechar dica">×</button>
       </div>
+    </div>
 
-      <div class="sidebar">
-        <div class="mode-toggle" id="mode-toggle">
-          <button class="mode-btn active" data-mode="normal">Normal</button>
-          <button class="mode-btn" data-mode="candidate">Candidato</button>
+    <main class="game-layout">
+      <section class="board-section" aria-labelledby="board-title">
+        <h2 id="board-title" class="sr-only">Tabuleiro</h2>
+        <p id="board-instructions" class="sr-only">
+          Use as setas para navegar entre as células. Pressione 1 a 9 para inserir um número.
+          Pressione Espaço para alternar o modo Notas, Delete para limpar e Escape para pausar.
+        </p>
+        <div class="board-container">
+          <div class="board" id="board" role="grid" tabindex="-1" aria-label="Tabuleiro de Sudoku 9 por 9" aria-describedby="board-instructions"></div>
+
+          <button type="button" class="board-overlay" id="board-overlay" hidden aria-label="Jogo pausado. Retomar jogo.">
+            <svg class="overlay-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M9 5v14M15 5v14"></path>
+            </svg>
+            <span class="overlay-title">Jogo pausado</span>
+            <span class="overlay-text">O cronômetro está parado.</span>
+            <span class="btn btn-primary" aria-hidden="true">Continuar</span>
+          </button>
+
+          <div class="generating-overlay" id="generating-overlay" role="status" hidden>
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Gerando novo jogo…</span>
+          </div>
+        </div>
+      </section>
+
+      <aside class="sidebar" id="sidebar" aria-label="Controles do jogo">
+        <div class="mode-toggle" id="mode-toggle" role="group" aria-label="Modo de entrada">
+          <button type="button" class="mode-btn is-active" data-mode="normal" aria-pressed="true">Normal</button>
+          <button type="button" class="mode-btn" data-mode="notes" aria-pressed="false">Notas</button>
         </div>
 
-        <div class="numpad" id="numpad">
-          <button class="num-btn" data-num="1"><span class="num-main">1</span></button>
-          <button class="num-btn" data-num="2"><span class="num-main">2</span></button>
-          <button class="num-btn" data-num="3"><span class="num-main">3</span></button>
-          <button class="num-btn" data-num="4"><span class="num-main">4</span></button>
-          <button class="num-btn" data-num="5"><span class="num-main">5</span></button>
-          <button class="num-btn" data-num="6"><span class="num-main">6</span></button>
-          <button class="num-btn" data-num="7"><span class="num-main">7</span></button>
-          <button class="num-btn" data-num="8"><span class="num-main">8</span></button>
-          <button class="num-btn" data-num="9"><span class="num-main">9</span></button>
+        <div class="numpad" id="numpad" role="group" aria-label="Inserir números">
+          <button type="button" class="num-btn" data-num="1"><span class="num-main">1</span><span class="num-badge" aria-hidden="true" hidden></span></button>
+          <button type="button" class="num-btn" data-num="2"><span class="num-main">2</span><span class="num-badge" aria-hidden="true" hidden></span></button>
+          <button type="button" class="num-btn" data-num="3"><span class="num-main">3</span><span class="num-badge" aria-hidden="true" hidden></span></button>
+          <button type="button" class="num-btn" data-num="4"><span class="num-main">4</span><span class="num-badge" aria-hidden="true" hidden></span></button>
+          <button type="button" class="num-btn" data-num="5"><span class="num-main">5</span><span class="num-badge" aria-hidden="true" hidden></span></button>
+          <button type="button" class="num-btn" data-num="6"><span class="num-main">6</span><span class="num-badge" aria-hidden="true" hidden></span></button>
+          <button type="button" class="num-btn" data-num="7"><span class="num-main">7</span><span class="num-badge" aria-hidden="true" hidden></span></button>
+          <button type="button" class="num-btn" data-num="8"><span class="num-main">8</span><span class="num-badge" aria-hidden="true" hidden></span></button>
+          <button type="button" class="num-btn" data-num="9"><span class="num-main">9</span><span class="num-badge" aria-hidden="true" hidden></span></button>
         </div>
 
         <div class="actions">
-          <button id="clear-cell-btn" title="Delete/Backspace">Limpar</button>
-          <button id="undo-btn" title="Ctrl+Z">Desfazer</button>
+          <button type="button" id="clear-cell-btn" class="btn btn-secondary" title="Apagar célula (Delete)">Limpar</button>
+          <button type="button" id="undo-btn" class="btn btn-secondary" title="Desfazer (Ctrl+Z)" disabled>Desfazer</button>
+          <button type="button" id="redo-btn" class="btn btn-secondary" title="Refazer (Ctrl+Shift+Z)" disabled>Refazer</button>
+          <button type="button" id="hint-btn" class="btn btn-secondary" title="Revelar uma célula (H)">Dica <span id="hint-count" class="badge">3</span></button>
         </div>
 
-        <div class="keyboard-hints">
-          <p><kbd>↑↓←→</kbd> Navegar</p>
-          <p><kbd>Espaço</kbd> Alternar modo</p>
-          <p><kbd>1-9</kbd> Inserir número</p>
-          <p><kbd>Del</kbd> Limpar célula</p>
+        <div class="keyboard-hints" id="keyboard-hints">
+          <p><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> Navegar</p>
+          <p><kbd>1-9</kbd> Inserir · <kbd>Espaço</kbd> Notas</p>
+          <p><kbd>Del</kbd> Limpar · <kbd id="modifier-key" class="mod-key">Ctrl</kbd>+<kbd>Z</kbd> Desfazer</p>
+          <p><kbd>Esc</kbd> Pausar · <kbd>?</kbd> Ajuda</p>
         </div>
-      </div>
+      </aside>
     </main>
+
+    <footer class="app-footer">
+      <p>Jogo local, sem anúncios. Seu progresso fica neste navegador.</p>
+    </footer>
   </div>
 
-  <div class="modal-overlay" id="game-over-modal" style="display: none;">
-    <div class="modal">
-      <h2>Game Over</h2>
-      <p>Você atingiu o limite de 3 erros!</p>
-      <div class="modal-actions">
-        <button id="restart-same-btn">Recomeçar</button>
-        <button id="new-game-modal-btn">Novo Jogo</button>
+  <div id="live-region" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+
+  <dialog class="dialog" id="new-game-dialog" aria-labelledby="new-game-title">
+    <div class="dialog-content">
+      <h2 id="new-game-title">Iniciar novo jogo?</h2>
+      <p>O progresso atual será perdido. Se quiser guardar esta partida, continue jogando.</p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" id="new-game-cancel-btn" autofocus>Continuar jogando</button>
+        <button type="button" class="btn btn-danger" id="new-game-confirm-btn">Iniciar novo jogo</button>
       </div>
     </div>
-  </div>
+  </dialog>
 
-  <div class="modal-overlay" id="win-modal" style="display: none;">
-    <div class="modal">
-      <h2>Parabéns!</h2>
-      <p>Você completou o Sudoku!</p>
-      <p id="win-time"></p>
-      <div id="new-record-msg" class="new-record-msg" style="display: none;">Novo Recorde!</div>
-      <div class="best-times" id="best-times"></div>
-      <div class="modal-actions">
-        <button id="new-game-win-btn">Novo Jogo</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="resume-modal" style="display: none;">
-    <div class="modal">
-      <h2>Continuar jogo?</h2>
+  <dialog class="dialog" id="resume-dialog" aria-labelledby="resume-title">
+    <div class="dialog-content">
+      <h2 id="resume-title">Continuar jogo?</h2>
       <p id="resume-info">Você tem um jogo em andamento.</p>
-      <div class="modal-actions">
-        <button id="resume-btn">Continuar</button>
-        <button id="new-game-resume-btn">Novo Jogo</button>
+      <p class="muted">Se iniciar um novo, o progresso salvo será descartado.</p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" id="new-game-resume-btn">Novo jogo</button>
+        <button type="button" class="btn btn-primary" id="resume-btn" autofocus>Continuar</button>
       </div>
     </div>
-  </div>
+  </dialog>
+
+  <dialog class="dialog" id="game-over-dialog" aria-labelledby="game-over-title">
+    <div class="dialog-content">
+      <div class="dialog-head">
+        <h2 id="game-over-title">Fim de jogo</h2>
+        <button type="button" class="icon-btn icon-btn--small" data-close aria-label="Fechar e ver o tabuleiro">×</button>
+      </div>
+      <p id="game-over-text">Você atingiu o limite de erros.</p>
+      <p class="muted">Você pode recomeçar o mesmo tabuleiro ou gerar outro.</p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" data-close>Ver tabuleiro</button>
+        <button type="button" class="btn btn-secondary" id="new-game-modal-btn">Novo jogo</button>
+        <button type="button" class="btn btn-primary" id="restart-same-btn" autofocus>Recomeçar</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="dialog dialog--wide" id="win-dialog" aria-labelledby="win-title">
+    <div class="dialog-content">
+      <div class="dialog-head">
+        <h2 id="win-title">Parabéns!</h2>
+        <button type="button" class="icon-btn icon-btn--small" data-close aria-label="Fechar e ver o tabuleiro">×</button>
+      </div>
+      <p class="win-summary" id="win-summary"></p>
+      <div id="new-record-msg" class="new-record-msg" hidden>Novo recorde!</div>
+      <h3 class="dialog-subtitle">Melhores tempos</h3>
+      <div id="win-best-times" class="records-list"></div>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" data-close>Ver tabuleiro</button>
+        <button type="button" class="btn btn-secondary" id="share-win-btn">Compartilhar</button>
+        <button type="button" class="btn btn-primary" id="new-game-win-btn">Jogar novamente</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="dialog dialog--wide" id="settings-dialog" aria-labelledby="settings-title">
+    <form method="dialog" class="dialog-content" id="settings-form">
+      <div class="dialog-head">
+        <h2 id="settings-title">Configurações</h2>
+        <button type="submit" value="close" class="icon-btn icon-btn--small" aria-label="Fechar">×</button>
+      </div>
+      <p class="muted">Preferências salvas neste navegador.</p>
+
+      <div class="settings-list">
+        <div class="settings-row">
+          <div class="settings-copy">
+            <label for="settings-theme">Tema</label>
+            <small>Seguir o sistema, claro ou escuro.</small>
+          </div>
+          <select id="settings-theme">
+            <option value="system">Seguir o sistema</option>
+            <option value="light">Claro</option>
+            <option value="dark">Escuro</option>
+          </select>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-copy">
+            <label for="settings-error-limit">Limite de erros</label>
+            <small>O jogo termina ao atingir o limite. Escolha ilimitado para jogar sem pressão.</small>
+          </div>
+          <select id="settings-error-limit">
+            <option value="3">3 erros</option>
+            <option value="5">5 erros</option>
+            <option value="0">Ilimitado</option>
+          </select>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-copy">
+            <label for="settings-keep-mistakes">Manter erros no tabuleiro</label>
+            <small>O número errado fica marcado para você corrigir, em vez de desaparecer.</small>
+          </div>
+          <input type="checkbox" id="settings-keep-mistakes" class="switch">
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-copy">
+            <label for="settings-auto-notes">Remover notas automaticamente</label>
+            <small>Ao acertar um número, apaga esse candidato das notas vizinhas.</small>
+          </div>
+          <input type="checkbox" id="settings-auto-notes" class="switch">
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-copy">
+            <label for="settings-highlight">Destacar números iguais</label>
+            <small>Realça todas as células com o mesmo valor da célula selecionada.</small>
+          </div>
+          <input type="checkbox" id="settings-highlight" class="switch">
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-copy">
+            <label for="settings-timer-start">Início do cronômetro</label>
+            <small>No primeiro movimento ou ao abrir o jogo.</small>
+          </div>
+          <select id="settings-timer-start">
+            <option value="first-move">No primeiro movimento</option>
+            <option value="on-load">Ao abrir o jogo</option>
+          </select>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-copy">
+            <label for="settings-haptics">Vibração no celular</label>
+            <small>Um toque curto ao acertar e um padrão ao errar, quando suportado.</small>
+          </div>
+          <input type="checkbox" id="settings-haptics" class="switch">
+        </div>
+      </div>
+
+      <p class="settings-note" id="settings-note" role="status" hidden></p>
+
+      <div class="dialog-actions dialog-actions--spread">
+        <button type="button" class="btn btn-ghost" id="reset-stats-btn">Redefinir estatísticas</button>
+        <button type="submit" value="close" class="btn btn-primary">Concluir</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="dialog" id="reset-stats-dialog" aria-labelledby="reset-stats-title">
+    <div class="dialog-content">
+      <h2 id="reset-stats-title">Redefinir estatísticas?</h2>
+      <p>Partidas, vitórias, sequências e tempos médios serão zerados. Os melhores tempos serão mantidos.</p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" id="cancel-reset-stats" autofocus>Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirm-reset-stats">Redefinir</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="dialog dialog--wide" id="records-dialog" aria-labelledby="records-title">
+    <div class="dialog-content">
+      <div class="dialog-head">
+        <h2 id="records-title">Recordes e estatísticas</h2>
+        <button type="button" class="icon-btn icon-btn--small" data-close aria-label="Fechar">×</button>
+      </div>
+
+      <label class="field-label" for="records-difficulty">Dificuldade</label>
+      <select id="records-difficulty">
+        <option value="easy">Fácil</option>
+        <option value="medium">Médio</option>
+        <option value="hard">Difícil</option>
+        <option value="professional">Profissional</option>
+        <option value="master">Mestre</option>
+      </select>
+
+      <h3 class="dialog-subtitle">Melhores tempos</h3>
+      <div id="records-best-times" class="records-list"></div>
+
+      <h3 class="dialog-subtitle">Estatísticas</h3>
+      <div id="records-stats" class="stats-grid"></div>
+
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-primary" data-close>Fechar</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="dialog dialog--wide" id="help-dialog" aria-labelledby="help-title">
+    <div class="dialog-content">
+      <div class="dialog-head">
+        <h2 id="help-title">Como jogar</h2>
+        <button type="button" class="icon-btn icon-btn--small" data-close aria-label="Fechar">×</button>
+      </div>
+
+      <p>Preencha o tabuleiro com números de <strong>1 a 9</strong> sem repetir nenhum número em cada linha, coluna ou caixa 3×3.</p>
+
+      <h3 class="dialog-subtitle">Modos</h3>
+      <ul class="help-list">
+        <li><strong>Normal:</strong> insere o número na célula selecionada.</li>
+        <li><strong>Notas:</strong> adiciona ou remove candidatos para você raciocinar sem chutar.</li>
+      </ul>
+
+      <h3 class="dialog-subtitle">Erros e dicas</h3>
+      <ul class="help-list">
+        <li>O número errado é marcado ou removido conforme as configurações, e conta como erro.</li>
+        <li>O jogo termina ao atingir o limite de erros configurado. Você pode escolher erros ilimitados.</li>
+        <li>Você tem <strong>3 dicas</strong> por partida. Cada dica revela uma célula e fica registrada no resultado.</li>
+      </ul>
+
+      <h3 class="dialog-subtitle">Atalhos</h3>
+      <div class="shortcut-grid">
+        <span><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd></span><span>Navegar pelo tabuleiro</span>
+        <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>Navegar pelo tabuleiro</span>
+        <span><kbd>1</kbd>–<kbd>9</kbd></span><span>Inserir número ou nota</span>
+        <span><kbd>Espaço</kbd></span><span>Alternar Normal / Notas</span>
+        <span><kbd>Delete</kbd></span><span>Limpar a célula</span>
+        <span><kbd class="mod-key">Ctrl</kbd>+<kbd>Z</kbd></span><span>Desfazer</span>
+        <span><kbd class="mod-key">Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></span><span>Refazer</span>
+        <span><kbd>Esc</kbd></span><span>Pausar ou retomar</span>
+        <span><kbd>H</kbd></span><span>Usar uma dica</span>
+        <span><kbd>?</kbd></span><span>Abrir esta ajuda</span>
+      </div>
+
+      <p class="muted">O jogo pausa automaticamente quando você troca de aba. O progresso é salvo apenas neste navegador.</p>
+
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-primary" data-close>Entendi</button>
+      </div>
+    </div>
+  </dialog>
 
   <script src="js/constants.js"></script>
   <script src="js/board.js"></script>
   <script src="js/storage.js"></script>
-  <script src="js/renderer.js"></script>
   <script src="js/timer.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/renderer.js"></script>
   <script src="js/game.js"></script>
 </body>
 </html>
