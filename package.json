@@ -4,7 +4,7 @@
   "private": true,
   "description": "Sudoku acessível com notas, cronômetro, recordes, estatísticas e suporte offline.",
   "scripts": {
-    "test": "node tests/test.js && node tests/storage.test.js",
+    "test": "node tests/test.js && node tests/storage.test.js && node tests/renderer.test.js",
     "serve": "python3 -m http.server 8080"
   },
   "license": "MIT"

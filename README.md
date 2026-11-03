@@ -43,9 +43,10 @@ Ou individualmente:
 ```sh
 node tests/test.js
 node tests/storage.test.js
+node tests/renderer.test.js
 ```
 
-Os testes cobrem geração e validação de tabuleiros, soluções únicas, cronômetro, persistência, validação de saves, recordes, estatísticas e configurações.
+Os testes cobrem geração e validação de tabuleiros, soluções únicas, cronômetro, persistência, validação de saves, recordes, estatísticas, configurações e o ciclo das animações de conclusão.
 
 ## Estrutura
 

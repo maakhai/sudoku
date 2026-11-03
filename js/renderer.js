@@ -1,12 +1,13 @@
 const SudokuRenderer = (() => {
   const SIZE = SudokuConstants.BOARD_SIZE;
   const BOX = SudokuConstants.BOX_SIZE;
+  const COMPLETION_FLASH_DURATION = 700;
 
   let boardEl, numpadEl, errorsEl, errorCountEl, timerEl;
   let cellCache = null;
   let numpadButtons = [];
   let errorDots = [];
-  let animationToken = 0;
+  const completionTimers = new Map();
 
   function init() {
     boardEl = document.getElementById('board');
@@ -316,9 +317,33 @@ const SudokuRenderer = (() => {
     SudokuUI.setBusy(boardEl, busy);
   }
 
+  function scheduleFlashes(entries, duration = COMPLETION_FLASH_DURATION) {
+    const targets = entries.filter(entry => entry && entry.cell);
+    if (targets.length === 0) return;
+
+    for (const entry of targets) {
+      const cell = entry.cell;
+      if (completionTimers.has(cell)) {
+        clearTimeout(completionTimers.get(cell));
+        completionTimers.delete(cell);
+      }
+      cell.classList.remove('complete-flash');
+    }
+
+    // Restart the animation from the beginning for every target.
+    void boardEl.offsetWidth;
+
+    for (const entry of targets) {
+      const cell = entry.cell;
+      cell.classList.add('complete-flash');
+      completionTimers.set(cell, setTimeout(() => {
+        cell.classList.remove('complete-flash');
+        completionTimers.delete(cell);
+      }, duration));
+    }
+  }
+
   function animateCompletion(row, col, flags = {}) {
-    animationToken += 1;
-    const token = animationToken;
     const targets = new Set();
 
     if (flags.row) {
@@ -335,16 +360,12 @@ const SudokuRenderer = (() => {
       }
     }
 
-    targets.forEach(entry => entry && entry.cell.classList.add('complete-flash'));
-
-    setTimeout(() => {
-      if (token !== animationToken) return;
-      targets.forEach(entry => entry && entry.cell.classList.remove('complete-flash'));
-    }, 700);
+    scheduleFlashes([...targets]);
   }
 
   function resetAnimations() {
-    animationToken += 1;
+    for (const timer of completionTimers.values()) clearTimeout(timer);
+    completionTimers.clear();
     if (!cellCache) return;
     for (const row of cellCache) {
       for (const entry of row) entry.cell.classList.remove('complete-flash');
@@ -352,15 +373,9 @@ const SudokuRenderer = (() => {
   }
 
   function flashCell(row, col) {
-    animationToken += 1;
-    const token = animationToken;
     const entry = cellCache[row] && cellCache[row][col];
     if (!entry) return;
-    entry.cell.classList.add('complete-flash');
-    setTimeout(() => {
-      if (token !== animationToken) return;
-      entry.cell.classList.remove('complete-flash');
-    }, 700);
+    scheduleFlashes([entry]);
   }
 
   function renderBestTimes(container, difficulty, currentEntryId, limit = SudokuConstants.BEST_TIMES_LIMIT) {
@@ -478,3 +493,7 @@ const SudokuRenderer = (() => {
     renderStats
   };
 })();
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = SudokuRenderer;
+}
